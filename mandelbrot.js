@@ -4,7 +4,7 @@ const ZOOM_FACTOR = 10;
 
 const MAX_ITERATIONS = 1000;
 const RED_MAXIMUM_ITERATIONS = Math.floor(MAX_ITERATIONS/3);
-const ORANGE_MAXIMUM_ITERATIONS = 10;
+const ORANGE_MAXIMUM_ITERATIONS = 50;
 
 window.onload = init;
 
@@ -58,9 +58,9 @@ function calculateImage() {
         g = 0;
         b = 0;
       } else if (lastIteration < ORANGE_MAXIMUM_ITERATIONS) {
-        r = 255;
-        g = 255 - ((255 - 127) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));
-        b = 255 - (255 * (lastIteration / (ORANGE_MAXIMUM_ITERATIONS - 1)));
+        r = 255 - ((255 - 127) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));;
+        g = 255 - ((255 - 0) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));
+        b = 255 - ((255 - 127) * (lastIteration / (ORANGE_MAXIMUM_ITERATIONS)));
       } else if (lastIteration >= RED_MAXIMUM_ITERATIONS && lastIteration < MAX_ITERATIONS) {
         r = 175 - (175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS);
         g = 175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS;
