@@ -2,8 +2,9 @@ let canvas, ctx;
 let minReal = -2.0, maxReal = 1.0, minImaginary = -1.2, maxImaginary, realFactor, imaginaryFactor;
 const ZOOM_FACTOR = 10;
 
-const MAX_ITERATIONS = 100;
-const MAX_ITERATIONS_HALF = Math.floor(MAX_ITERATIONS/2);
+const MAX_ITERATIONS = 1000;
+const RED_MAXIMUM_ITERATIONS = Math.floor(MAX_ITERATIONS/3);
+const ORANGE_MAXIMUM_ITERATIONS = 10;
 
 window.onload = init;
 
@@ -23,10 +24,10 @@ function calculateImage() {
   // console.log('canvas.height: ' + canvas.height)
   // console.log('canvas.width: ' + canvas.width)
 
-  // console.log('minReal: ' + minReal)
-  // console.log('maxReal: ' + maxReal)
-  // console.log('minImaginary: ' + minImaginary)
-  // console.log('maxImaginary: ' + maxImaginary)
+  console.log('minReal: ' + minReal)
+  console.log('maxReal: ' + maxReal)
+  console.log('minImaginary: ' + minImaginary)
+  console.log('maxImaginary: ' + maxImaginary)
   // console.log('realFactor: ' + realFactor)
   // console.log('imaginaryFactor' + imaginaryFactor)
 
@@ -56,28 +57,19 @@ function calculateImage() {
         r = 0;
         g = 0;
         b = 0;
-      } else if (lastIteration >= MAX_ITERATIONS_HALF && lastIteration < MAX_ITERATIONS) {
+      } else if (lastIteration < ORANGE_MAXIMUM_ITERATIONS) {
         r = 255;
-        g = 255 * (lastIteration - (MAX_ITERATIONS_HALF - 1)) / MAX_ITERATIONS_HALF;
-        b = 255 * (lastIteration - (MAX_ITERATIONS_HALF - 1)) / MAX_ITERATIONS_HALF;
-      } else if (lastIteration >=0 && lastIteration < MAX_ITERATIONS_HALF) {
-        r = 255 * (lastIteration / (MAX_ITERATIONS_HALF - 1))
+        g = 255 - ((255 - 127) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));
+        b = 255 - (255 * (lastIteration / (ORANGE_MAXIMUM_ITERATIONS - 1)));
+      } else if (lastIteration >= RED_MAXIMUM_ITERATIONS && lastIteration < MAX_ITERATIONS) {
+        r = 175 - (175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS);
+        g = 175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS;
+        b = 127 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS;
+      } else if (lastIteration >= ORANGE_MAXIMUM_ITERATIONS && lastIteration < RED_MAXIMUM_ITERATIONS) {
+        r = 175 * (lastIteration / (RED_MAXIMUM_ITERATIONS - ORANGE_MAXIMUM_ITERATIONS))
         g = 0;
         b = 0;
       }
-      // if (lastIteration === MAX_ITERATIONS) {
-      //   r = 0;
-      //   g = 0;
-      //   b = 0;
-      // } else if (lastIteration <= Math.floor(MAX_ITERATIONS/2)-1) {
-      //   r = 255 * (lastIteration / Math.floor(MAX_ITERATIONS/2)-1);
-      //   g = 0;
-      //   b = 0;
-      // } else {
-      //   r = 255;
-      //   g = 255 * (lastIteration - (Math.floor(MAX_ITERATIONS/2) - 1) / Math.floor(MAX_ITERATIONS/2) - 1);
-      //   b = 255 * (lastIteration - (Math.floor(MAX_ITERATIONS/2) - 1) / Math.floor(MAX_ITERATIONS/2) - 1);
-      // }
 
       const off = (y * imageData.width + x) * 4;
       pixels[off] = r;
