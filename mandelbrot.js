@@ -4,8 +4,66 @@ let minReal = START_MIN_REAL, maxReal = START_MAX_REAL, minImaginary = START_MIN
 const ZOOM_FACTOR = 10;
 
 const MAX_ITERATIONS = 1000;
-const THRESHOLD_2 = Math.floor(MAX_ITERATIONS/10);
+const THRESHOLD_2 = Math.floor(MAX_ITERATIONS/3);
 const THRESHOLD_1 = 50;
+
+const convertIterationToLogScale = (iteration) => {
+  return Math.log(iteration) / Math.log(MAX_ITERATIONS) * 100;
+};
+
+40, 252, 199
+const THRESHOLD_MAX = 100;
+const COLOR_SCHEME = [{
+  fromColor: [1,1,28],
+  toColor: [10,10,150],
+},
+{
+  fromColor: [10,10,150],
+  toColor: [252, 115, 23],
+},
+{
+  fromColor: [252, 115, 23],
+  toColor: [87, 5, 99],
+},
+{
+  fromColor: [87, 5, 99],
+  toColor: [150,0,0],
+},
+{
+  fromColor: [150,0,0],
+  toColor: [245, 201, 56],
+},
+{
+  fromColor: [245, 201, 56],
+  toColor: [0,175,127],
+},
+{
+  fromColor: [0,175,127],
+  toColor: [50, 128, 33],
+},
+{
+  fromColor: [50, 128, 33],
+  toColor: [252, 229, 23],
+}];
+const SCHEME_LENGTH = COLOR_SCHEME.length;
+COLOR_SCHEME.forEach((config, index) => {
+  config.threshold = convertIterationToLogScale(MAX_ITERATIONS/SCHEME_LENGTH*(index + 1))
+});
+
+const calculateColorShift = (scaleValue, configIndex) => {
+  const colorConfig = COLOR_SCHEME[configIndex];
+  const previousThreshold = configIndex === 0 ? 0 : COLOR_SCHEME[configIndex - 1].threshold;
+  const [fR, fG, fB] = colorConfig.fromColor;
+  const [tR, tG, tB] = colorConfig.toColor;
+  let r, g, b;
+
+  // Subtract previous threshold from each so each scale is spread evenly within itself, not over the whole 100
+  const shiftFactor = (scaleValue - previousThreshold) / (colorConfig.threshold - previousThreshold);
+  r = fR + ((tR - fR) * shiftFactor);
+  g = fG + ((tG - fG) * shiftFactor);
+  b = fB + ((tB - fB) * shiftFactor);
+  return [r, g, b];
+}
 
 window.onload = init;
 
@@ -19,20 +77,6 @@ function init() {
 
 const getComplexReal = (x) => minReal + x*realFactor;
 const getComplexImaginary = (y) => maxImaginary - y*imaginaryFactor;
-
-// scaleSize must be at least 2
-// n is zero indexed
-// color params are arrays with length 3
-const calculateColorShift = (fromColor, toColor, n, scaleSize) => {
-  const [fR, fG, fB] = fromColor;
-  const [tR, tG, tB] = toColor;
-  let r, g, b;
-  const shiftFactor = n / (scaleSize - 1);
-  r = fR + ((tR - fR) * shiftFactor);
-  g = fG + ((tG - fG) * shiftFactor);
-  b = fB + ((tB - fB) * shiftFactor);
-  return [r, g, b];
-}
 
 function calculateImage() {
   ctx = canvas.getContext('2d');
@@ -67,17 +111,15 @@ function calculateImage() {
         lastIteration++;
       }
 
+
+
       let r, g, b;
-      if (lastIteration === MAX_ITERATIONS) {
-        r = 0;
-        g = 0;
-        b = 0;
-      } else if (lastIteration < THRESHOLD_1) {
-        [r, g, b] = calculateColorShift([1,1,28], [10,10,150], lastIteration, THRESHOLD_1);
-      } else if (lastIteration >= THRESHOLD_1 && lastIteration < THRESHOLD_2) {
-        [r, g, b] = calculateColorShift([0,0,0], [175,0,0], lastIteration - THRESHOLD_1, THRESHOLD_2 - THRESHOLD_1);
-      } else if (lastIteration >= THRESHOLD_2 && lastIteration < MAX_ITERATIONS) {
-        [r, g, b] = calculateColorShift([175,0,0], [0,175,127], lastIteration - THRESHOLD_2, MAX_ITERATIONS - THRESHOLD_2);
+      const scaleValue = convertIterationToLogScale(lastIteration);
+      if (scaleValue === THRESHOLD_MAX) {
+        [r, g, b] = [0, 0, 0];
+      } else {
+        const index = COLOR_SCHEME.findIndex((colorConfig) => scaleValue < colorConfig.threshold);
+        [r, g, b] = calculateColorShift(scaleValue, index);
       }
 
       const off = (y * imageData.width + x) * 4;
