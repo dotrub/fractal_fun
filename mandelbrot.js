@@ -1,10 +1,11 @@
 let canvas, ctx;
-let minReal = -2.0, maxReal = 1.0, minImaginary = -1.2, maxImaginary, realFactor, imaginaryFactor;
+const START_MIN_REAL = -2, START_MAX_REAL = 1, START_MIN_IMAG = -1.2, START_MAX_IMAG = 1.2;
+let minReal = START_MIN_REAL, maxReal = START_MAX_REAL, minImaginary = START_MIN_IMAG, maxImaginary, realFactor, imaginaryFactor;
 const ZOOM_FACTOR = 10;
 
 const MAX_ITERATIONS = 1000;
-const RED_MAXIMUM_ITERATIONS = Math.floor(MAX_ITERATIONS/3);
-const ORANGE_MAXIMUM_ITERATIONS = 50;
+const THRESHOLD_2 = Math.floor(MAX_ITERATIONS/10);
+const THRESHOLD_1 = 50;
 
 window.onload = init;
 
@@ -18,6 +19,20 @@ function init() {
 
 const getComplexReal = (x) => minReal + x*realFactor;
 const getComplexImaginary = (y) => maxImaginary - y*imaginaryFactor;
+
+// scaleSize must be at least 2
+// n is zero indexed
+// color params are arrays with length 3
+const calculateColorShift = (fromColor, toColor, n, scaleSize) => {
+  const [fR, fG, fB] = fromColor;
+  const [tR, tG, tB] = toColor;
+  let r, g, b;
+  const shiftFactor = n / (scaleSize - 1);
+  r = fR + ((tR - fR) * shiftFactor);
+  g = fG + ((tG - fG) * shiftFactor);
+  b = fB + ((tB - fB) * shiftFactor);
+  return [r, g, b];
+}
 
 function calculateImage() {
   ctx = canvas.getContext('2d');
@@ -57,18 +72,12 @@ function calculateImage() {
         r = 0;
         g = 0;
         b = 0;
-      } else if (lastIteration < ORANGE_MAXIMUM_ITERATIONS) {
-        r = 255 - ((255 - 127) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));;
-        g = 255 - ((255 - 0) * (lastIteration / ORANGE_MAXIMUM_ITERATIONS));
-        b = 255 - ((255 - 127) * (lastIteration / (ORANGE_MAXIMUM_ITERATIONS)));
-      } else if (lastIteration >= RED_MAXIMUM_ITERATIONS && lastIteration < MAX_ITERATIONS) {
-        r = 175 - (175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS);
-        g = 175 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS;
-        b = 127 * (lastIteration - (RED_MAXIMUM_ITERATIONS - 1)) / RED_MAXIMUM_ITERATIONS;
-      } else if (lastIteration >= ORANGE_MAXIMUM_ITERATIONS && lastIteration < RED_MAXIMUM_ITERATIONS) {
-        r = 175 * (lastIteration / (RED_MAXIMUM_ITERATIONS - ORANGE_MAXIMUM_ITERATIONS))
-        g = 0;
-        b = 0;
+      } else if (lastIteration < THRESHOLD_1) {
+        [r, g, b] = calculateColorShift([1,1,28], [10,10,150], lastIteration, THRESHOLD_1);
+      } else if (lastIteration >= THRESHOLD_1 && lastIteration < THRESHOLD_2) {
+        [r, g, b] = calculateColorShift([0,0,0], [175,0,0], lastIteration - THRESHOLD_1, THRESHOLD_2 - THRESHOLD_1);
+      } else if (lastIteration >= THRESHOLD_2 && lastIteration < MAX_ITERATIONS) {
+        [r, g, b] = calculateColorShift([175,0,0], [0,175,127], lastIteration - THRESHOLD_2, MAX_ITERATIONS - THRESHOLD_2);
       }
 
       const off = (y * imageData.width + x) * 4;
@@ -95,7 +104,25 @@ function zoomIn(centerX, centerY) {
 function setWindowSize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  maxImaginary = minImaginary + (maxReal - minReal)*canvas.height/canvas.width;
+  const aspectRatio = canvas.height/canvas.width;
+
+  maxImaginary = minImaginary + ((maxReal - minReal)*aspectRatio);
+  if (maxReal - minReal >= 3) {
+    if (maxImaginary < START_MAX_IMAG) {
+      maxImaginary = START_MAX_IMAG;
+      maxReal = minReal + ((maxImaginary - minImaginary) / aspectRatio);
+
+      // slide real axis to center x=-0.5
+      const realWidth = maxReal - minReal;
+      minReal = minReal - ((realWidth - 3) / 2);
+      maxReal = maxReal - ((realWidth - 3) / 2);
+    } else {
+      // // slide imaginary axis to center y=0
+      const imagWidth = maxImaginary - minImaginary;
+      minImaginary = minImaginary - ((imagWidth - 2.4) / 2);
+      maxImaginary = maxImaginary - ((imagWidth - 2.4) / 2);
+    }
+  }
   realFactor = (maxReal-minReal)/(canvas.width-1);
   imaginaryFactor = (maxImaginary-minImaginary)/(canvas.height-1);
   calculateImage();
@@ -106,5 +133,8 @@ const delay = 250;
 
 window.addEventListener('resize', () => {
   clearTimeout(timeout);
+  minReal = START_MIN_REAL;
+  maxReal = START_MAX_REAL;
+  minImaginary = START_MIN_IMAG;
   timeout = setTimeout(setWindowSize, delay);
 });
