@@ -11,7 +11,6 @@ const convertIterationToLogScale = (iteration) => {
   return Math.log(iteration) / Math.log(MAX_ITERATIONS) * 100;
 };
 
-40, 252, 199
 const THRESHOLD_MAX = 100;
 const COLOR_SCHEME = [{
   fromColor: [1,1,28],
