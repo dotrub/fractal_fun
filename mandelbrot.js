@@ -7,25 +7,30 @@ const MAX_ITERATIONS = 1000;
 const THRESHOLD_2 = Math.floor(MAX_ITERATIONS/3);
 const THRESHOLD_1 = 50;
 
-const convertIterationToLogScale = (iteration) => {
-  return Math.log(iteration) / Math.log(MAX_ITERATIONS) * 100;
+const convertToScale = (iteration) => {
+  const WEIGHT_VALUE = MAX_ITERATIONS * .01;
+  return iteration <= WEIGHT_VALUE ? 0 : Math.log(iteration - WEIGHT_VALUE) / Math.log(MAX_ITERATIONS - WEIGHT_VALUE) * 100;
 };
 
 const THRESHOLD_MAX = 100;
 const COLOR_SCHEME = [{
-  fromColor: [1,1,28],
-  toColor: [10,10,150],
+  fromColor: [1,1,50],
+  toColor: [190, 21, 209],
 },
 {
-  fromColor: [10,10,150],
-  toColor: [252, 115, 23],
+  fromColor: [190, 21, 209],
+  toColor: [10,10,75],
 },
 {
-  fromColor: [252, 115, 23],
-  toColor: [87, 5, 99],
+  fromColor: [10,10,75],
+  toColor: [201, 83, 4],
 },
 {
-  fromColor: [87, 5, 99],
+  fromColor: [201, 83, 4],
+  toColor: [5, 37, 105],
+},
+{
+  fromColor: [5, 37, 105],
   toColor: [150,0,0],
 },
 {
@@ -42,16 +47,22 @@ const COLOR_SCHEME = [{
 },
 {
   fromColor: [50, 128, 33],
-  toColor: [252, 229, 23],
+  toColor: [255, 0, 0],
+},
+{
+  fromColor: [255, 0, 0],
+  toColor: [245, 132, 113],
 }];
 const SCHEME_LENGTH = COLOR_SCHEME.length;
 COLOR_SCHEME.forEach((config, index) => {
-  config.threshold = convertIterationToLogScale(MAX_ITERATIONS/SCHEME_LENGTH*(index + 1))
+  config.threshold = convertToScale(MAX_ITERATIONS/SCHEME_LENGTH*(index + 1))
+  // console.log('threshold: ', config.threshold)
 });
+// console.log('COLOR_SCHEME: ', COLOR_SCHEME)
 
 const calculateColorShift = (scaleValue, configIndex) => {
   const colorConfig = COLOR_SCHEME[configIndex];
-  const previousThreshold = configIndex === 0 ? 0 : COLOR_SCHEME[configIndex - 1].threshold;
+  const previousThreshold = configIndex === 0 ? 0 : COLOR_SCHEME[configIndex - 1]?.threshold;
   const [fR, fG, fB] = colorConfig.fromColor;
   const [tR, tG, tB] = colorConfig.toColor;
   let r, g, b;
@@ -113,7 +124,7 @@ function calculateImage() {
 
 
       let r, g, b;
-      const scaleValue = convertIterationToLogScale(lastIteration);
+      const scaleValue = convertToScale(lastIteration);
       if (scaleValue === THRESHOLD_MAX) {
         [r, g, b] = [0, 0, 0];
       } else {
